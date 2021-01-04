@@ -43,7 +43,7 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    wget vim git parted unrar p7zip cabextract ripgrep fzy
+    wget vim git parted unrar p7zip cabextract ripgrep fzy config.services.samba.package
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -103,6 +103,34 @@
         };
       };
 
+  services.samba = {
+    enable = true;
+    securityType = "user";
+    extraConfig = ''
+      server role = standalone server
+      workgroup = WORKGROUP
+      server string = nvd-server
+      netbios name = nvd-server
+      security = user
+      hosts allow = 192.168.2
+      hosts deny = 0.0.0.0/0
+      guest account = nobody
+      map to guest = bad user
+    '';
+    shares = {
+      media = {
+        path = "/mnt/nvd-raid/media";
+        browseable = "yes";
+        "valid users" = "nick";
+        "read only" = "no";
+        "guest ok" = "no";
+        "create mask" = "0644";
+        "directory mask" = "0755";
+      };
+    };
+  };
+
+
   # Open ports in the firewall.
   networking.firewall.allowedTCPPorts = [
     548
@@ -111,8 +139,12 @@
     5050
     8112
     2049
+    445
+    139
   ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
+
+  networking.firewall.allowedUDPPorts = [ 137 138 ];
+  networking.firewall.allowPing = true;
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
 
